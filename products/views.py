@@ -1,10 +1,10 @@
-from django.shortcuts import redirect, render
-from django.shortcuts import get_object_or_404
-
+from django.shortcuts import redirect, render,get_object_or_404
+from .decorators import admin_required
 from .forms import ProductForm
-from .models import Product, ProductImage
+from .models import Product, ProductImage,Banner, Category
+from wishlist.models import Wishlist
 
-
+@admin_required
 def product_list(request):
     products = Product.objects.prefetch_related("images").all()
 
@@ -18,7 +18,7 @@ def product_list(request):
         context,
     )
 
-
+@admin_required
 def product_create(request):
     if request.method == "POST":
         form = ProductForm(request.POST)
@@ -51,7 +51,7 @@ def product_create(request):
     
 
 
-
+@admin_required
 def product_detail(request, pk):
     product = get_object_or_404(
         Product.objects.prefetch_related("images"),
@@ -68,7 +68,7 @@ def product_detail(request, pk):
         context,
     )
     
-    
+@admin_required   
 def product_update(request, pk):
     product = get_object_or_404(
         Product.objects.prefetch_related("images"),
@@ -111,6 +111,7 @@ def product_update(request, pk):
         "products/product_update.html",
         context,
     )
+@admin_required
 def product_image_delete(request, pk):
     image = get_object_or_404(
         ProductImage,
@@ -132,7 +133,7 @@ def product_image_delete(request, pk):
         pk=product_pk,
     )
     
-    
+@admin_required    
 def product_delete(request, pk):
     product = get_object_or_404(
         Product,
@@ -150,28 +151,98 @@ def product_delete(request, pk):
         "products:product_detail",
         pk=product.pk,
     )
-    
-def storefront_product_list(request):
-    products = Product.objects.prefetch_related("images").all()
 
-    context = {
-        "products": products,
-    }
+def storefront_product_list(request):
+
+    query = request.GET.get("q", "").strip()
+    category_id = request.GET.get("category")
+
+    products = Product.objects.prefetch_related("images")
+
+    trending_products = (
+        Product.objects
+        .filter(is_trending=True)
+        .prefetch_related("images")
+        .order_by("-created_at")
+    )
+
+    banners = Banner.objects.filter(
+        is_active=True
+    ).order_by("order")
+
+    categories = Category.objects.all().order_by("name")
+
+
+    # =========================
+    # SEARCH
+    # =========================
+
+    if query:
+        products = products.filter(
+            name__icontains=query
+        )
+
+
+    # =========================
+    # CATEGORY
+    # =========================
+
+    if category_id:
+        products = products.filter(
+            category_id=category_id
+        )
+
+
+    # =========================
+    # WISHLIST
+    # =========================
+
+    wishlist_product_ids = set()
+
+    if request.user.is_authenticated:
+
+        wishlist_product_ids = set(
+            Wishlist.objects.filter(
+                user=request.user
+            ).values_list(
+                "product_id",
+                flat=True
+            )
+        )
+
 
     return render(
         request,
         "products/storefront/product_list.html",
-        context,
+        {
+            "products": products,
+            "trending_products": trending_products,
+            "categories": categories,
+            "query": query,
+            "banners": banners,
+            "wishlist_product_ids": wishlist_product_ids,
+        },
     )
     
 def storefront_product_detail(request, pk):
+
     product = get_object_or_404(
         Product.objects.prefetch_related("images"),
         pk=pk,
     )
 
+    is_in_wishlist = False
+
+    if request.user.is_authenticated:
+
+        is_in_wishlist = Wishlist.objects.filter(
+            user=request.user,
+            product=product,
+        ).exists()
+
     context = {
         "product": product,
+        "is_in_wishlist": is_in_wishlist,
     }
 
     return render(

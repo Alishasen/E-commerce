@@ -1,7 +1,11 @@
 from django.shortcuts import get_object_or_404, redirect, render
+from django.contrib.auth.decorators import login_required
 
 from products.models import Product
+def cart_count(request):
+    cart = request.session.get("cart", {})
 
+    return sum(cart.values())
 
 def cart_detail(request):
 
@@ -39,10 +43,9 @@ def cart_detail(request):
         context,
     )
 
-
+@login_required(login_url="accounts:login")
 def cart_add(request, product_id):
 
-    # Only allow POST requests to modify the cart
     if request.method != "POST":
         return redirect(
             "products:storefront_product_detail",
@@ -145,5 +148,19 @@ def cart_update(request, product_id):
 
         request.session["cart"] = cart
         request.session.modified = True
+
+    return redirect("cart:cart_detail")
+
+def cart_remove(request, product_id):
+
+    if request.method != "POST":
+        return redirect("cart:cart_detail")
+
+    cart = request.session.get("cart", {})
+
+    cart.pop(str(product_id), None)
+
+    request.session["cart"] = cart
+    request.session.modified = True
 
     return redirect("cart:cart_detail")

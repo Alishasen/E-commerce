@@ -1,40 +1,207 @@
+{% load static %}
+
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
 
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-    <title>Products</title>
+    <title>Manage Products | KHOJ</title>
 
+    <!-- Bootstrap -->
     <link
         href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
         rel="stylesheet"
     >
 
+    <!-- Bootstrap Icons -->
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+    >
+
+
+    <style>
+
+        :root {
+            --blue: #8DB4D6;
+            --light-blue: #D6E6F2;
+            --background: #F2F7FB;
+            --dark: #243447;
+            --blue-dark: #5F91B8;
+        }
+
+
+        body {
+            background: var(--background);
+            color: var(--dark);
+        }
+
+
+        /* =========================
+           NAVBAR
+        ========================= */
+
+        .manage-navbar {
+            background: var(--dark);
+        }
+
+
+        .navbar-brand {
+            color: #fff !important;
+            letter-spacing: 2px;
+        }
+
+
+        .navbar-brand:hover {
+            color: var(--blue) !important;
+        }
+
+
+        /* =========================
+           ADD PRODUCT BUTTON
+        ========================= */
+
+        .add-product-btn {
+            background: var(--blue);
+            color: #fff;
+            border: none;
+        }
+
+
+        .add-product-btn:hover {
+            background: var(--blue-dark);
+            color: #fff;
+        }
+
+
+        /* =========================
+           PAGE HEADER
+        ========================= */
+
+        .page-title {
+            color: var(--dark);
+        }
+
+
+        /* =========================
+           PRODUCT CARD
+        ========================= */
+
+        .product-card {
+            border: 0;
+            border-radius: 16px;
+            overflow: hidden;
+            transition: .2s ease;
+        }
+
+
+        .product-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px rgba(73, 102, 126, .12) !important;
+        }
+
+
+        .product-image {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+        }
+
+
+        .no-image {
+            height: 250px;
+            background: var(--light-blue);
+        }
+
+
+        /* =========================
+           PRODUCT DETAILS
+        ========================= */
+
+        .product-name {
+            color: var(--dark);
+        }
+
+
+        .product-price {
+            color: var(--blue-dark);
+            font-weight: 700;
+        }
+
+
+        .product-meta {
+            color: #6c757d;
+        }
+
+
+        /* =========================
+           VIEW DETAILS
+        ========================= */
+
+        .view-btn {
+            background: var(--blue);
+            color: #fff;
+            border: none;
+        }
+
+
+        .view-btn:hover {
+            background: var(--blue-dark);
+            color: #fff;
+        }
+
+
+        /* =========================
+           EMPTY MESSAGE
+        ========================= */
+
+        .empty-box {
+            background: #fff;
+            border-radius: 16px;
+        }
+
+
+        .empty-icon {
+            color: var(--blue-dark);
+        }
+
+
+    </style>
+
 </head>
 
 
-<body class="bg-light">
+<body>
 
 
-<nav class="navbar navbar-dark bg-dark">
+<!-- =====================================================
+     MANAGEMENT NAVBAR
+===================================================== -->
 
-    <div class="container">
+<nav class="navbar manage-navbar">
+
+    <div class="container py-2">
 
         <a
             href="{% url 'products:product_list' %}"
-            class="navbar-brand fw-bold"
+            class="navbar-brand fw-bold fs-4"
         >
             KHOJ
         </a>
 
+
         <a
             href="{% url 'products:product_create' %}"
-            class="btn btn-primary"
+            class="btn add-product-btn px-3"
         >
-            + Add Product
+            <i class="bi bi-plus-lg me-1"></i>
+            Add Product
         </a>
 
     </div>
@@ -42,24 +209,33 @@
 </nav>
 
 
+
+<!-- =====================================================
+     PAGE CONTENT
+===================================================== -->
+
 <div class="container py-5">
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
 
-        <div>
+    <!-- PAGE HEADER -->
 
-            <h1 class="fw-bold mb-1">
-                Products
-            </h1>
+    <div class="mb-4">
 
-            <p class="text-muted mb-0">
-                Browse our products
-            </p>
+        <h1 class="fw-bold page-title mb-1">
+            Products
+        </h1>
 
-        </div>
+        <p class="text-muted mb-0">
+            Manage your products
+        </p>
 
     </div>
 
+
+
+    <!-- =================================================
+         PRODUCTS
+    ================================================== -->
 
     {% if products %}
 
@@ -67,12 +243,13 @@
 
             {% for product in products %}
 
-                <div class="col-md-6 col-lg-4">
-
-                    <div class="card h-100 shadow-sm">
+                <div class="col-12 col-md-6 col-lg-4">
 
 
-                        <!-- Product Image -->
+                    <div class="card product-card h-100 shadow-sm">
+
+
+                        <!-- PRODUCT IMAGE -->
 
                         {% with image=product.images.first %}
 
@@ -81,19 +258,19 @@
                                 <img
                                     src="{{ image.image.url }}"
                                     alt="{{ product.name }}"
-                                    class="card-img-top"
-                                    style="height: 250px; object-fit: cover;"
+                                    class="product-image"
                                 >
 
                             {% else %}
 
                                 <div
-                                    class="bg-secondary-subtle d-flex align-items-center justify-content-center"
-                                    style="height: 250px;"
+                                    class="no-image d-flex align-items-center justify-content-center"
                                 >
+
                                     <span class="text-muted">
                                         No Image
                                     </span>
+
                                 </div>
 
                             {% endif %}
@@ -101,9 +278,13 @@
                         {% endwith %}
 
 
-                        <div class="card-body d-flex flex-column">
 
-                            <h5 class="card-title fw-bold">
+                        <!-- PRODUCT INFORMATION -->
+
+                        <div class="card-body d-flex flex-column p-4">
+
+
+                            <h5 class="product-name fw-bold mb-2">
                                 {{ product.name }}
                             </h5>
 
@@ -117,27 +298,38 @@
 
                             <div class="mt-auto">
 
-                                <h5 class="text-primary">
+
+                                <!-- PRICE -->
+
+                                <h5 class="product-price mb-2">
                                     Rs. {{ product.price }}
                                 </h5>
 
 
-                                <p class="small text-muted mb-3">
+                                <!-- STOCK + DISCOUNT -->
+
+                                <p class="product-meta small mb-3">
 
                                     Stock:
-                                    {{ product.stock }}
+                                    <strong>
+                                        {{ product.stock }}
+                                    </strong>
 
                                     <br>
 
                                     Discount:
-                                    {{ product.discount }}%
+                                    <strong>
+                                        {{ product.discount }}%
+                                    </strong>
 
                                 </p>
 
 
+                                <!-- VIEW DETAILS -->
+
                                 <a
                                     href="{% url 'products:product_detail' product.pk %}"
-                                    class="btn btn-primary w-100"
+                                    class="btn view-btn w-100"
                                 >
                                     View Details
                                 </a>
@@ -154,21 +346,55 @@
 
         </div>
 
+
     {% else %}
-        <div class="alert alert-info">
-            No products available.
-            <a href="{% url 'products:product_create' %}">
-                Add the first product.
+
+
+        <!-- =================================================
+             NO PRODUCTS
+        ================================================== -->
+
+        <div class="empty-box shadow-sm text-center py-5">
+
+            <i
+                class="bi bi-box-seam empty-icon"
+                style="font-size: 3rem;"
+            ></i>
+
+
+            <h4 class="fw-bold mt-3">
+                No products available
+            </h4>
+
+
+            <p class="text-muted">
+                Add your first product to get started.
+            </p>
+
+
+            <a
+                href="{% url 'products:product_create' %}"
+                class="btn add-product-btn px-4"
+            >
+                <i class="bi bi-plus-lg me-1"></i>
+                Add Product
             </a>
 
         </div>
 
+
     {% endif %}
 
 </div>
+
+
+
+<!-- Bootstrap JS -->
+
 <script
     src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
 ></script>
+
 
 </body>
 
