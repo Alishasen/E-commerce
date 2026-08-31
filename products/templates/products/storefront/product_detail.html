@@ -514,26 +514,25 @@
     <div class="col-md-4">
 
         <form
-            method="POST"
-            action="{% url 'cart:cart_add' product.pk %}"
-        >
-
-            {% csrf_token %}
-
-            <input
-                type="hidden"
-                name="quantity"
-                value="1"
-            >
-
-            <button
-    type="submit"
-    class="btn cart-btn-large btn-lg w-100"
+    method="POST"
+    action="{% url 'cart:cart_add' product.pk %}"
 >
-    Add to Cart
-</button>
+    {% csrf_token %}
 
-        </form>
+    <input
+        id="cartQuantity"
+        type="hidden"
+        name="quantity"
+        value="1"
+    >
+
+    <button
+        type="submit"
+        class="btn cart-btn-large btn-lg w-100"
+    >
+        Add to Cart
+    </button>
+</form>
 
     </div>
 </div>

@@ -14,6 +14,23 @@ from pathlib import Path
 
 from decouple import config
 
+ESEWA_PRODUCT_CODE = config(
+    "ESEWA_PRODUCT_CODE"
+)
+
+ESEWA_SECRET_KEY = config(
+    "ESEWA_SECRET_KEY"
+)
+
+ESEWA_PAYMENT_URL = config(
+    "ESEWA_PAYMENT_URL"
+)
+
+ESEWA_STATUS_URL = config(
+    "ESEWA_STATUS_URL"
+)
+
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -43,6 +60,7 @@ INSTALLED_APPS = [
     'accounts',
     'cart',
     'wishlist',
+    'pages',
 ]
 
 MIDDLEWARE = [

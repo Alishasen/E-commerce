@@ -1,0 +1,180 @@
+{% extends "products/storefront/base.html" %}
+
+{% block title %}
+FAQs | KHOJ
+{% endblock %}
+
+{% block content %}
+
+<main class="container py-5">
+
+    <div class="row justify-content-center">
+
+        <div class="col-lg-8">
+
+            <div class="text-center mb-5">
+
+                <h1 class="fw-bold">
+                    Frequently Asked Questions
+                </h1>
+
+                <p class="text-muted mt-3">
+                    Find answers to common questions about KHOJ.
+                </p>
+
+            </div>
+
+
+            <div class="accordion" id="faqAccordion">
+
+
+                <!-- FAQ 1 -->
+
+                <div class="accordion-item border-0 shadow-sm mb-3">
+
+                    <h2 class="accordion-header">
+
+                        <button
+                            class="accordion-button"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#faqOne"
+                        >
+                            How do I create an account?
+                        </button>
+
+                    </h2>
+
+                    <div
+                        id="faqOne"
+                        class="accordion-collapse collapse show"
+                        data-bs-parent="#faqAccordion"
+                    >
+
+                        <div class="accordion-body">
+
+                            Click the Sign up button in the navbar
+                            and complete the registration form.
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- FAQ 2 -->
+
+                <div class="accordion-item border-0 shadow-sm mb-3">
+
+                    <h2 class="accordion-header">
+
+                        <button
+                            class="accordion-button collapsed"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#faqTwo"
+                        >
+                            How do I add a product to my cart?
+                        </button>
+
+                    </h2>
+
+                    <div
+                        id="faqTwo"
+                        class="accordion-collapse collapse"
+                        data-bs-parent="#faqAccordion"
+                    >
+
+                        <div class="accordion-body">
+
+                            Open a product's details page, select
+                            the quantity you want, and click
+                            Add to Cart.
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- FAQ 3 -->
+
+                <div class="accordion-item border-0 shadow-sm mb-3">
+
+                    <h2 class="accordion-header">
+
+                        <button
+                            class="accordion-button collapsed"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#faqThree"
+                        >
+                            What payment methods are available?
+                        </button>
+
+                    </h2>
+
+                    <div
+                        id="faqThree"
+                        class="accordion-collapse collapse"
+                        data-bs-parent="#faqAccordion"
+                    >
+
+                        <div class="accordion-body">
+
+                            KHOJ supports the payment methods
+                            available during the checkout process.
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- FAQ 4 -->
+
+                <div class="accordion-item border-0 shadow-sm mb-3">
+
+                    <h2 class="accordion-header">
+
+                        <button
+                            class="accordion-button collapsed"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#faqFour"
+                        >
+                            How can I get help with an issue?
+                        </button>
+
+                    </h2>
+
+                    <div
+                        id="faqFour"
+                        class="accordion-collapse collapse"
+                        data-bs-parent="#faqAccordion"
+                    >
+
+                        <div class="accordion-body">
+
+                            Visit the Help & Support page or contact
+                            KHOJ through the Contact Us page.
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+            </div>
+
+        </div>
+
+    </div>
+
+</main>
+
+{% endblock %}

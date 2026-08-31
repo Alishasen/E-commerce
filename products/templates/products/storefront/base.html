@@ -43,6 +43,36 @@
             color: var(--dark);
         }
 
+        /* =========================
+TOP UTILITY BAR
+========================= */
+
+.utility-bar {
+background: var(--dark);
+color: #fff;
+font-size: 0.9rem;
+}
+
+.utility-bar .container {
+min-height: 38px;
+}
+
+.utility-link {
+color: rgba(255, 255, 255, 0.85);
+text-decoration: none;
+transition: color 0.2s ease;
+}
+
+.utility-link:hover {
+color: #fff;
+}
+
+.utility-divider {
+color: rgba(255, 255, 255, 0.45);
+margin: 0 14px;
+}
+
+
 
         /* =========================
            NAVBAR
@@ -215,21 +245,59 @@
 
 </head>
 
-
 <body>
-
-
 <!-- =====================================================
-     CUSTOMER NAVBAR
+     TOP UTILITY BAR
 ===================================================== -->
+<div class="utility-bar">
 
+<div class="container d-flex justify-content-end align-items-center">
+
+    <div class="d-flex align-items-center py-2">
+
+        <a
+            href="{% url 'pages:about' %}"
+            class="utility-link"
+        >
+            About Us
+        </a>
+
+        <span class="utility-divider">|</span>
+
+        <a
+            href="{% url 'pages:contact' %}"
+            class="utility-link"
+        >
+            Contact
+        </a>
+
+        <span class="utility-divider">|</span>
+
+        <a
+            href="{% url 'pages:support' %}"
+            class="utility-link"
+        >
+            Help & Support
+        </a>
+
+        <span class="utility-divider">|</span>
+
+        <a
+            href="{% url 'pages:faqs' %}"
+            class="utility-link"
+        >
+            FAQs
+        </a>
+    </div>
+</div>
+</div>
+
+
+{% comment %}  CUSTOMER NAVBAR {% endcomment %}
 <nav class="navbar navbar-expand-lg">
 
     <div class="container py-2">
-
-
         <!-- KHOJ -->
-
         <a
             href="{% url 'products:storefront_product_list' %}"
             class="navbar-brand fw-bold fs-4"

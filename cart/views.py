@@ -1,11 +1,20 @@
+import base64
+import hashlib
+import hmac
+import json
+import requests
+from django.conf import settings
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib.auth.decorators import login_required
+from django.db import transaction
+from products.models import Product, Order, OrderItem, Payment
 
-from products.models import Product
+
 def cart_count(request):
     cart = request.session.get("cart", {})
 
     return sum(cart.values())
+
 
 def cart_detail(request):
 
@@ -42,6 +51,7 @@ def cart_detail(request):
         "cart/cart_detail.html",
         context,
     )
+
 
 @login_required(login_url="accounts:login")
 def cart_add(request, product_id):
@@ -151,6 +161,7 @@ def cart_update(request, product_id):
 
     return redirect("cart:cart_detail")
 
+
 def cart_remove(request, product_id):
 
     if request.method != "POST":
@@ -164,3 +175,415 @@ def cart_remove(request, product_id):
     request.session.modified = True
 
     return redirect("cart:cart_detail")
+
+
+@login_required(login_url="accounts:login")
+def checkout(request):
+
+    cart = request.session.get("cart", {})
+
+    # Cart is empty
+    if not cart:
+        return redirect("cart:cart_detail")
+
+    cart_items = []
+    total = 0
+
+    for product_id, quantity in cart.items():
+
+        product = get_object_or_404(
+            Product,
+            pk=product_id,
+        )
+
+        # Check stock
+        if product.stock < quantity:
+            return redirect("cart:cart_detail")
+
+        subtotal = product.price * quantity
+        total += subtotal
+
+        cart_items.append({
+            "product": product,
+            "quantity": quantity,
+            "subtotal": subtotal,
+        })
+
+    # -------------------------
+    # POST = CREATE ORDER
+    # -------------------------
+
+    if request.method == "POST":
+
+        order = Order.objects.create(
+            user=request.user,
+            total_amount=total,
+            status="pending",
+        )
+
+        for item in cart_items:
+
+            OrderItem.objects.create(
+                order=order,
+                product=item["product"],
+                quantity=item["quantity"],
+                price=item["product"].price,
+                subtotal=item["subtotal"],
+            )
+
+        # Create pending payment
+        Payment.objects.create(
+            order=order,
+            payment_method="esewa",
+            amount=total,
+            status="pending",
+        )
+
+        return redirect(
+            "cart:payment",
+            order_id=order.id,
+        )
+
+    # -------------------------
+    # GET = SHOW CHECKOUT
+    # -------------------------
+
+    return render(
+        request,
+        "cart/checkout.html",
+        {
+            "cart_items": cart_items,
+            "total": total,
+        },
+    )
+
+
+@login_required(login_url="accounts:login")
+def payment(request, order_id):
+
+    order = get_object_or_404(
+        Order,
+        pk=order_id,
+        user=request.user,
+    )
+
+    return render(
+        request,
+        "cart/payment.html",
+        {
+            "order": order,
+        },
+    )
+
+
+def generate_esewa_signature(
+    total_amount,
+    transaction_uuid,
+    product_code,
+):
+
+    message = (
+        f"total_amount={total_amount},"
+        f"transaction_uuid={transaction_uuid},"
+        f"product_code={product_code}"
+    )
+
+    secret_key = settings.ESEWA_SECRET_KEY.encode("utf-8")
+
+    signature = hmac.new(
+        secret_key,
+        message.encode("utf-8"),
+        hashlib.sha256,
+    ).digest()
+
+    return base64.b64encode(signature).decode("utf-8")
+
+
+@login_required(login_url="accounts:login")
+def esewa_payment(request, order_id):
+
+    order = get_object_or_404(
+        Order,
+        pk=order_id,
+        user=request.user,
+    )
+
+    payment = get_object_or_404(
+        Payment,
+        order=order,
+        payment_method="esewa",
+    )
+
+    if payment.status == "success":
+        return redirect(
+            "cart:payment",
+            order_id=order.id,
+        )
+
+    transaction_uuid = f"KHOJ-{order.id}-{order.created_at.strftime('%Y%m%d%H%M%S')}"
+
+    total_amount = f"{payment.amount:.2f}"
+
+    signature = generate_esewa_signature(
+        total_amount=total_amount,
+        transaction_uuid=transaction_uuid,
+        product_code=settings.ESEWA_PRODUCT_CODE,
+    )
+
+    payment.transaction_id = transaction_uuid
+    payment.save(
+        update_fields=["transaction_id"]
+    )
+
+    context = {
+        "payment_url": settings.ESEWA_PAYMENT_URL,
+        "amount": total_amount,
+        "tax_amount": "0",
+        "total_amount": total_amount,
+        "transaction_uuid": transaction_uuid,
+        "product_code": settings.ESEWA_PRODUCT_CODE,
+        "product_service_charge": "0",
+        "product_delivery_charge": "0",
+        "signed_field_names": (
+            "total_amount,"
+            "transaction_uuid,"
+            "product_code"
+        ),
+        "signature": signature,
+        "success_url": request.build_absolute_uri(
+            "/cart/payment/esewa/success/"
+        ),
+        "failure_url": request.build_absolute_uri(
+            "/cart/payment/esewa/failure/"
+        ),
+    }
+
+    return render(
+        request,
+        "cart/esewa_redirect.html",
+        context,
+    )
+
+
+@login_required(login_url="accounts:login")
+def esewa_success(request):
+
+    encoded_data = request.GET.get("data")
+
+    if not encoded_data:
+        return render(
+            request,
+            "cart/payment_failed.html",
+            {
+                "message": "No payment response was received from eSewa."
+            },
+        )
+
+    try:
+        decoded_data = base64.b64decode(
+            encoded_data
+        ).decode("utf-8")
+
+        response_data = json.loads(decoded_data)
+
+    except (ValueError, json.JSONDecodeError):
+        return render(
+            request,
+            "cart/payment_failed.html",
+            {
+                "message": "Invalid payment response."
+            },
+        )
+
+    transaction_uuid = response_data.get(
+        "transaction_uuid"
+    )
+
+    if not transaction_uuid:
+        return render(
+            request,
+            "cart/payment_failed.html",
+            {
+                "message": "Transaction ID was not received."
+            },
+        )
+
+    payment = get_object_or_404(
+        Payment,
+        transaction_id=transaction_uuid,
+        order__user=request.user,
+    )
+
+    # Only process the payment if it is still pending
+    if payment.status == "success":
+        return redirect(
+            "cart:payment_success",
+            order_id=payment.order.id,
+        )
+
+    # Verify the transaction with eSewa
+    verification_url = settings.ESEWA_STATUS_URL
+
+    params = {
+        "product_code": settings.ESEWA_PRODUCT_CODE,
+        "total_amount": f"{payment.amount:.2f}",
+        "transaction_uuid": transaction_uuid,
+    }
+
+    response = requests.get(
+        verification_url,
+        params=params,
+        timeout=30,
+    )
+
+    if response.status_code != 200:
+        return render(
+            request,
+            "cart/payment_failed.html",
+            {
+                "message": "Unable to verify payment with eSewa."
+            },
+        )
+
+    verification_data = response.json()
+
+    status = verification_data.get("status")
+
+    if status != "COMPLETE":
+        payment.status = "failed"
+        payment.save(
+            update_fields=["status"]
+        )
+
+        payment.order.status = "failed"
+        payment.order.save(
+            update_fields=["status"]
+        )
+
+        return render(
+            request,
+            "cart/payment_failed.html",
+            {
+                "message": (
+                    "eSewa could not confirm this payment."
+                )
+            },
+        )
+
+    # Payment is verified by eSewa
+    if status == "COMPLETE":
+
+        with transaction.atomic():
+
+            payment.status = "success"
+            payment.save(
+                update_fields=["status"]
+            )
+
+            order = payment.order
+
+            # Prevent stock from being reduced twice
+            if order.status != "paid":
+
+                for item in order.items.select_related("product"):
+
+                    product = item.product
+
+                    # Check stock again before reducing it
+                    if product.stock < item.quantity:
+
+                        payment.status = "failed"
+                        payment.save(
+                            update_fields=["status"]
+                        )
+
+                        order.status = "failed"
+                        order.save(
+                            update_fields=["status"]
+                        )
+
+                        return render(
+                            request,
+                            "cart/payment_failed.html",
+                            {
+                                "message": (
+                                    f"Not enough stock for "
+                                    f"{product.name}."
+                                )
+                            },
+                        )
+
+                    product.stock -= item.quantity
+
+                    product.save(
+                        update_fields=["stock"]
+                    )
+
+                order.status = "paid"
+
+                order.save(
+                    update_fields=["status"]
+                )
+
+        # Clear cart only after successful payment
+        request.session["cart"] = {}
+
+        request.session.modified = True
+
+        return redirect(
+            "cart:payment_success",
+            order_id=order.id,
+        )
+
+
+@login_required(login_url="accounts:login")
+def esewa_failure(request):
+
+    transaction_uuid = request.GET.get(
+        "transaction_uuid"
+    )
+
+    if transaction_uuid:
+
+        payment = Payment.objects.filter(
+            transaction_id=transaction_uuid,
+            order__user=request.user,
+        ).first()
+
+        if payment:
+            payment.status = "failed"
+            payment.save(
+                update_fields=["status"]
+            )
+
+            payment.order.status = "failed"
+            payment.order.save(
+                update_fields=["status"]
+            )
+
+    return render(
+        request,
+        "cart/payment_failed.html",
+        {
+            "message": "Your eSewa payment was not completed."
+        },
+    )
+
+
+@login_required(login_url="accounts:login")
+def payment_success(request, order_id):
+
+    order = get_object_or_404(
+        Order,
+        pk=order_id,
+        user=request.user,
+        status="paid",
+    )
+
+    return render(
+        request,
+        "cart/payment_success.html",
+        {
+            "order": order,
+        },
+    )
