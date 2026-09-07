@@ -1,3 +1,4 @@
+
 {% extends "products/storefront/base.html" %}
 
 
@@ -64,8 +65,10 @@
     }
 
     .discount {
-        color: var(--blue-dark);
-        background: var(--light-blue);
+        color: #dc3545;
+        background: transparent;
+        font-weight: 600;
+        padding: 0;
     }
 
 
@@ -113,6 +116,40 @@
 
 
     /* =========================
+       PRODUCT RATING
+    ========================= */
+
+    .product-rating {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+    }
+
+    .rating-stars {
+        letter-spacing: 1px;
+        font-size: 1.05rem;
+        line-height: 1;
+    }
+
+    .rating-stars .filled {
+        color: #f59e0b;
+    }
+
+    .rating-stars .empty {
+        color: #d9d9d9;
+    }
+
+    .rating-number {
+        font-weight: 600;
+        color: #555;
+    }
+
+    .review-count {
+        color: #888;
+    }
+
+
+    /* =========================
        QUANTITY
     ========================= */
 
@@ -156,7 +193,6 @@
         color: #fff;
     }
 
-
     .cart-btn-large {
         background: var(--blue);
         color: #fff;
@@ -183,7 +219,7 @@
 
 
     /* =========================
-       REVIEWS
+       REVIEWS SECTION
     ========================= */
 
     .reviews-box {
@@ -192,14 +228,33 @@
     }
 
     .review-btn {
-        background: #fff;
-        color: var(--dark);
-        border: 1px solid var(--light-blue);
+        background: var(--blue);
+        color: #fff;
+        border: 0;
     }
 
     .review-btn:hover {
-        background: var(--light-blue);
-        color: var(--dark);
+        background: var(--blue-dark);
+        color: #fff;
+    }
+
+    .review-stars {
+        color: #f59e0b;
+        letter-spacing: 1px;
+    }
+
+    .review-item {
+        border-top: 1px solid #eee;
+        padding: 18px 0;
+    }
+
+    .review-item:first-of-type {
+        border-top: 0;
+    }
+
+    .review-date {
+        font-size: .85rem;
+        color: #888;
     }
 
 
@@ -233,7 +288,9 @@
 <main class="container py-5">
 
 
-    <!-- PRODUCT -->
+    <!-- =========================
+         PRODUCT
+    ========================= -->
 
     <div class="product-box shadow-sm p-3 p-md-4">
 
@@ -303,18 +360,26 @@
             <div class="col-lg-6">
 
 
-                <!-- TITLE + ACTION ICONS -->
+                <!-- =========================
+                     TITLE + ACTION ICONS
+                ========================== -->
 
                 <div
                     class="d-flex justify-content-between align-items-start gap-3"
                 >
+
+                    <!-- PRODUCT TITLE -->
 
                     <h1 class="product-title mb-3">
                         {{ product.name }}
                     </h1>
 
 
+                    <!-- SHARE + WISHLIST -->
+
                     <div class="d-flex gap-2 flex-shrink-0">
+
+                        <!-- SHARE -->
 
                         <button
                             type="button"
@@ -325,41 +390,43 @@
                         </button>
 
 
+                        <!-- WISHLIST -->
+
                         {% if user.is_authenticated %}
 
-    {% if is_in_wishlist %}
+                            {% if is_in_wishlist %}
 
-        <a
-            href="{% url 'wishlist:remove' product.pk %}"
-           class="icon-btn wishlist-active d-flex align-items-center justify-content-center"
-            title="Remove from wishlist"
-        >
-            <i class="bi bi-heart-fill"></i>
-        </a>
+                                <a
+                                    href="{% url 'wishlist:remove' product.pk %}"
+                                    class="icon-btn wishlist-active d-flex align-items-center justify-content-center"
+                                    title="Remove from wishlist"
+                                >
+                                    <i class="bi bi-heart-fill"></i>
+                                </a>
 
-    {% else %}
+                            {% else %}
 
-        <a
-            href="{% url 'wishlist:add' product.pk %}"
-            class="icon-btn d-flex align-items-center justify-content-center"
-            title="Add to wishlist"
-        >
-            <i class="bi bi-heart"></i>
-        </a>
+                                <a
+                                    href="{% url 'wishlist:add' product.pk %}"
+                                    class="icon-btn d-flex align-items-center justify-content-center"
+                                    title="Add to wishlist"
+                                >
+                                    <i class="bi bi-heart"></i>
+                                </a>
 
-    {% endif %}
+                            {% endif %}
 
-{% else %}
+                        {% else %}
 
-    <a
-        href="{% url 'accounts:login' %}?next={{ request.path }}"
-        class="icon-btn d-flex align-items-center justify-content-center"
-        title="Login to add to wishlist"
-    >
-        <i class="bi bi-heart"></i>
-    </a>
+                            <a
+                                href="{% url 'accounts:login' %}?next={{ request.path }}"
+                                class="icon-btn d-flex align-items-center justify-content-center"
+                                title="Login to add to wishlist"
+                            >
+                                <i class="bi bi-heart"></i>
+                            </a>
 
-{% endif %}
+                        {% endif %}
 
                     </div>
 
@@ -367,16 +434,66 @@
 
 
 
-                <!-- REVIEWS -->
+                <!-- =========================
+                     PRODUCT RATING
+                ========================== -->
 
-                <div class="mb-3">
+                <div class="product-rating mb-3">
 
-                    <a
-                        href="#reviews"
-                        class="review-link"
-                    >
-                        ★ Reviews
-                    </a>
+                    {% if review_count %}
+
+                        <span class="rating-stars">
+
+                            {% if average_rating >= 5 %}
+
+                                <span class="filled">★★★★★</span>
+
+                            {% elif average_rating >= 4 %}
+
+                                <span class="filled">★★★★</span>
+                                <span class="empty">☆</span>
+
+                            {% elif average_rating >= 3 %}
+
+                                <span class="filled">★★★</span>
+                                <span class="empty">☆☆</span>
+
+                            {% elif average_rating >= 2 %}
+
+                                <span class="filled">★★</span>
+                                <span class="empty">☆☆☆</span>
+
+                            {% else %}
+
+                                <span class="filled">★</span>
+                                <span class="empty">☆☆☆☆</span>
+
+                            {% endif %}
+
+                        </span>
+
+
+                        <span class="rating-number">
+                            {{ average_rating|floatformat:1 }}
+                        </span>
+
+
+                        <span class="review-count">
+                            ({{ review_count }} reviews)
+                        </span>
+
+
+                    {% else %}
+
+                        <span class="rating-stars">
+                            <span class="empty">☆☆☆☆☆</span>
+                        </span>
+
+                        <span class="review-count">
+                            (0 reviews)
+                        </span>
+
+                    {% endif %}
 
                 </div>
 
@@ -385,7 +502,9 @@
 
 
 
-                <!-- PRICE -->
+                <!-- =========================
+                     PRICE
+                ========================== -->
 
                 <div class="my-4">
 
@@ -406,28 +525,32 @@
 
 
 
-                <!-- STOCK -->
+                <!-- =========================
+                     STOCK
+                ========================== -->
 
-               {% if product.stock > 0 %}
+                {% if product.stock > 0 %}
 
-    <p class="stock-available fw-semibold">
-        ✓ {{ product.stock }} available
-    </p>
+                    <p class="stock-available fw-semibold">
+                        ✓ {{ product.stock }} available
+                    </p>
 
-{% else %}
+                {% else %}
 
-    <p class="stock-unavailable fw-semibold">
-        ✕ Out of Stock
-    </p>
+                    <p class="stock-unavailable fw-semibold">
+                        ✕ Out of Stock
+                    </p>
 
-{% endif %}
+                {% endif %}
 
 
                 <hr>
 
 
 
-                <!-- DESCRIPTION -->
+                <!-- =========================
+                     DESCRIPTION
+                ========================== -->
 
                 <h5 class="fw-bold mt-4">
                     Description
@@ -459,9 +582,9 @@
                         <div class="input-group quantity-box">
 
                             <button
-                               type="button"
-                               class="btn quantity-btn"
-                               onclick="changeQuantity(-1)"
+                                type="button"
+                                class="btn quantity-btn"
+                                onclick="changeQuantity(-1)"
                             >
                                 −
                             </button>
@@ -478,9 +601,9 @@
 
 
                             <button
-                               type="button"
-                               class="btn quantity-btn"
-                               onclick="changeQuantity(1)"
+                                type="button"
+                                class="btn quantity-btn"
+                                onclick="changeQuantity(1)"
                             >
                                 +
                             </button>
@@ -489,53 +612,61 @@
 
                     </div>
 
-<!-- ACTION BUTTONS -->
-
-<div class="row g-3">
 
 
-    <!-- BUY NOW -->
+                    <!-- =========================
+                         ACTION BUTTONS
+                    ========================== -->
 
-    <div class="col-md-4">
-
-        <button
-            type="button"
-            class="btn buy-btn btn-lg w-100"
-        >
-            Buy Now
-        </button>
-
-    </div>
+                    <div class="row g-3">
 
 
+                        <!-- BUY NOW -->
 
-    <!-- ADD TO CART -->
+                        <div class="col-md-4">
 
-    <div class="col-md-4">
+                            <button
+                                type="button"
+                                class="btn buy-btn btn-lg w-100"
+                            >
+                                Buy Now
+                            </button>
 
-        <form
-    method="POST"
-    action="{% url 'cart:cart_add' product.pk %}"
->
-    {% csrf_token %}
+                        </div>
 
-    <input
-        id="cartQuantity"
-        type="hidden"
-        name="quantity"
-        value="1"
-    >
 
-    <button
-        type="submit"
-        class="btn cart-btn-large btn-lg w-100"
-    >
-        Add to Cart
-    </button>
-</form>
+                        <!-- ADD TO CART -->
 
-    </div>
-</div>
+                        <div class="col-md-4">
+
+                            <form
+                                method="POST"
+                                action="{% url 'cart:cart_add' product.pk %}"
+                            >
+
+                                {% csrf_token %}
+
+                                <input
+                                    id="cartQuantity"
+                                    type="hidden"
+                                    name="quantity"
+                                    value="1"
+                                >
+
+                                <button
+                                    type="submit"
+                                    class="btn cart-btn-large btn-lg w-100"
+                                >
+                                    Add to Cart
+                                </button>
+
+                            </form>
+
+                        </div>
+
+                    </div>
+
+
                 {% endif %}
 
             </div>
@@ -547,7 +678,7 @@
 
 
     <!-- =========================
-         REVIEWS
+         CUSTOMER REVIEWS
     ========================== -->
 
     <section
@@ -560,17 +691,214 @@
         </h4>
 
 
-        <p class="text-muted mb-3">
-            No reviews yet.
-        </p>
+        <!-- =========================
+             RATING SUMMARY
+        ========================== -->
+
+        <div class="product-rating mb-4">
+
+            {% if review_count %}
+
+                <span class="rating-stars">
+
+                    {% if average_rating >= 5 %}
+
+                        <span class="filled">★★★★★</span>
+
+                    {% elif average_rating >= 4 %}
+
+                        <span class="filled">★★★★</span>
+                        <span class="empty">☆</span>
+
+                    {% elif average_rating >= 3 %}
+
+                        <span class="filled">★★★</span>
+                        <span class="empty">☆☆</span>
+
+                    {% elif average_rating >= 2 %}
+
+                        <span class="filled">★★</span>
+                        <span class="empty">☆☆☆</span>
+
+                    {% else %}
+
+                        <span class="filled">★</span>
+                        <span class="empty">☆☆☆☆</span>
+
+                    {% endif %}
+
+                </span>
 
 
-        <button
-            type="button"
-            class="btn review-btn"
-        >
-             Write a Review
-        </button>
+                <span class="rating-number">
+                    {{ average_rating|floatformat:1 }}
+                </span>
+
+
+                <span class="review-count">
+                    ({{ review_count }} reviews)
+                </span>
+
+
+            {% else %}
+
+                <span class="rating-stars">
+                    <span class="empty">☆☆☆☆☆</span>
+                </span>
+
+                <span class="review-count">
+                    No reviews yet
+                </span>
+
+            {% endif %}
+
+        </div>
+
+
+
+        <!-- =========================
+             REVIEWS LIST
+        ========================== -->
+
+        {% if reviews %}
+
+            {% for review in reviews %}
+
+                <div class="review-item">
+
+                    <div class="d-flex justify-content-between align-items-center">
+
+                        <strong>
+                            {{ review.user.username }}
+                        </strong>
+
+                        <span class="review-date">
+                            {{ review.created_at|date:"M d, Y" }}
+                        </span>
+
+                    </div>
+
+
+                    <!-- STAR RATING -->
+
+                    <div class="review-stars my-1">
+
+                        {% if review.rating == 5 %}
+
+                            ★★★★★
+
+                        {% elif review.rating == 4 %}
+
+                            ★★★★☆
+
+                        {% elif review.rating == 3 %}
+
+                            ★★★☆☆
+
+                        {% elif review.rating == 2 %}
+
+                            ★★☆☆☆
+
+                        {% else %}
+
+                            ★☆☆☆☆
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <!-- COMMENT -->
+
+                    {% if review.comment %}
+
+                        <p class="text-muted mb-0">
+                            {{ review.comment }}
+                        </p>
+
+                    {% endif %}
+
+                </div>
+
+            {% endfor %}
+
+        {% endif %}
+
+
+
+        <!-- =========================
+             WRITE REVIEW
+        ========================== -->
+
+        {% if user.is_authenticated %}
+
+            <div class="mt-4 pt-3 border-top">
+
+                <h5 class="fw-bold mb-3">
+                    Write a Review
+                </h5>
+
+
+                <form
+                    method="POST"
+                    action="{% url 'products:add_review' product.pk %}"
+                >
+
+                    {% csrf_token %}
+
+
+                    <!-- RATING -->
+
+                    <div class="mb-3">
+
+                        <label class="form-label fw-semibold">
+                            Rating
+                        </label>
+
+                        {{ review_form.rating }}
+
+                    </div>
+
+
+                    <!-- COMMENT -->
+
+                    <div class="mb-3">
+
+                        <label class="form-label fw-semibold">
+                            Review
+                        </label>
+
+                        {{ review_form.comment }}
+
+                    </div>
+
+
+                    <button
+                        type="submit"
+                        class="btn review-btn"
+                    >
+                        Submit Review
+                    </button>
+
+                </form>
+
+            </div>
+
+
+        {% else %}
+
+            <div class="mt-4">
+
+                <a
+                    href="{% url 'accounts:login' %}?next={{ request.path }}%23reviews"
+                    class="btn review-btn"
+                >
+                    Login to Write a Review
+                </a>
+
+            </div>
+
+        {% endif %}
 
     </section>
 
@@ -588,8 +916,11 @@
        QUANTITY
     ========================== */
 
-    const quantity = document.getElementById("quantity");
-    const cartQuantity = document.getElementById("cartQuantity");
+    const quantity =
+        document.getElementById("quantity");
+
+    const cartQuantity =
+        document.getElementById("cartQuantity");
 
 
     function updateQuantity(value) {
@@ -598,38 +929,43 @@
             return;
         }
 
-        const max = parseInt(quantity.max);
 
-        value = parseInt(value) || 1;
-
-        value = Math.max(
-            1,
-            Math.min(value, max)
-        );
+        const max =
+            parseInt(quantity.max);
 
 
-        quantity.value = value;
+        value =
+            parseInt(value) || 1;
+
+
+        value =
+            Math.max(
+                1,
+                Math.min(value, max)
+            );
+
+
+        quantity.value =
+            value;
 
 
         if (cartQuantity) {
-            cartQuantity.value = value;
+
+            cartQuantity.value =
+                value;
+
         }
 
     }
-
-
     function changeQuantity(amount) {
 
         if (!quantity) {
             return;
         }
-
         updateQuantity(
             parseInt(quantity.value) + amount
         );
-
     }
-
 
     if (quantity) {
 
@@ -663,7 +999,8 @@
         }
 
 
-        mainImage.src = image.src;
+        mainImage.src =
+            image.src;
 
 
         document
@@ -682,3 +1019,4 @@
 </script>
 
 {% endblock %}
+

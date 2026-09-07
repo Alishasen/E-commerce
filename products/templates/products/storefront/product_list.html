@@ -115,10 +115,20 @@
     }
 
     .discount {
-        background: var(--light-blue);
-        color: #4c7899;
-    }
+    background: transparent;
+    color: #dc3545;
+    padding: 0;
+    font-weight: 600;
+}
 
+.trending-discount {
+    background: transparent;
+    color: #dc3545;
+    font-size: .8rem;
+    margin-left: 5px;
+    padding: 0;
+    font-weight: 600;
+}
     /* TRENDING PRODUCTS */
 
 .trending-section {
@@ -208,12 +218,7 @@
     font-weight: 700;
 }
 
-.trending-discount {
-    background: var(--light-blue);
-    color: #4c7899;
-    font-size: .8rem;
-    margin-left: 5px;
-}
+
 
 .trending-actions {
     display: flex;
@@ -297,6 +302,29 @@
     .trending-arrow {
         display: none;
     }
+}
+.product-rating,
+.trending-rating {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin: 4px 0 8px;
+    font-size: 0.85rem;
+}
+
+.rating-stars {
+    color: #f59e0b;
+    letter-spacing: 1px;
+    font-size: 0.9rem;
+}
+
+.rating-number {
+    color: #555;
+    font-weight: 600;
+}
+
+.review-count {
+    color: #888;
 }
 
 
@@ -530,11 +558,27 @@
                 <div class="trending-info">
 
                     <div class="trending-name">
-                        {{ product.name }}
+                       {{ product.name }}
                     </div>
 
+<div class="trending-rating">
+    {% if product.review_count %}
+        <span class="rating-stars">★★★★★</span>
+        <span class="rating-number">
+            {{ product.average_rating|floatformat:1 }}
+        </span>
+        <span class="review-count">
+            ({{ product.review_count }} reviews)
+        </span>
+    {% else %}
+        <span class="rating-stars">★★★★★</span>
+        <span class="review-count">
+            (0 reviews)
+        </span>
+    {% endif %}
+</div>
 
-                    <div>
+<div>
 
                         <span class="trending-price">
                             Rs. {{ product.price }}
@@ -734,11 +778,28 @@
                     <div class="card-body d-flex flex-column p-4">
 
                         <h5 class="fw-bold">
-                            {{ product.name }}
-                        </h5>
+    {{ product.name }}
+</h5>
+
+<div class="product-rating">
+    {% if product.review_count %}
+        <span class="rating-stars">★★★★★</span>
+        <span class="rating-number">
+            {{ product.average_rating|floatformat:1 }}
+        </span>
+        <span class="review-count">
+            ({{ product.review_count }} reviews)
+        </span>
+    {% else %}
+        <span class="rating-stars">★★★★★</span>
+        <span class="review-count">
+            (0 reviews)
+        </span>
+    {% endif %}
+</div>
 
 
-                        <div class="mb-2">
+<div class="mb-2">
 
                             <span class="price">
                                 Rs. {{ product.price }}

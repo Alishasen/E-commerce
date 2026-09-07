@@ -1,8 +1,10 @@
 from django.shortcuts import redirect, render,get_object_or_404
 from .decorators import admin_required
-from .forms import ProductForm
-from .models import Product, ProductImage,Banner, Category
+from .forms import ProductForm, ReviewForm
+from .models import Product, ProductImage, Banner, Category, Review
 from wishlist.models import Wishlist
+from django.db.models import Avg, Count
+from django.contrib.auth.decorators import login_required
 
 @admin_required
 def product_list(request):
@@ -157,12 +159,23 @@ def storefront_product_list(request):
     query = request.GET.get("q", "").strip()
     category_id = request.GET.get("category")
 
-    products = Product.objects.prefetch_related("images")
+    products = (
+        Product.objects
+       .prefetch_related("images")
+       .annotate(
+           average_rating=Avg("reviews__rating"),
+           review_count=Count("reviews")
+        )
+    )
 
     trending_products = (
         Product.objects
         .filter(is_trending=True)
         .prefetch_related("images")
+        .annotate(
+            average_rating=Avg("reviews__rating"),
+            review_count=Count("reviews")
+        )
         .order_by("-created_at")
     )
 
@@ -240,13 +253,49 @@ def storefront_product_detail(request, pk):
             product=product,
         ).exists()
 
+    reviews = Review.objects.filter(
+        product=product
+    ).select_related("user")
+
+    review_count = reviews.count()
+
+    average_rating = reviews.aggregate(
+        average=Avg("rating")
+    )["average"]
+
+    review_form = ReviewForm()
+
     context = {
         "product": product,
         "is_in_wishlist": is_in_wishlist,
+        "reviews": reviews,
+        "review_count": review_count,
+        "average_rating": average_rating,
+        "review_form": review_form,
     }
 
     return render(
         request,
         "products/storefront/product_detail.html",
         context,
+    )
+@login_required(login_url="accounts:login")
+def add_review(request, pk):
+
+    product = get_object_or_404(Product, pk=pk)
+
+    if request.method == "POST":
+
+        form = ReviewForm(request.POST)
+
+        if form.is_valid():
+
+            review = form.save(commit=False)
+            review.product = product
+            review.user = request.user
+            review.save()
+
+    return redirect(
+        "products:storefront_product_detail",
+        pk=product.pk,
     )

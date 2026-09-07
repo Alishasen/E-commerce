@@ -24,7 +24,11 @@ urlpatterns = [
         name="storefront_product_detail",
     ),
 
-
+    path(
+    "<int:pk>/review/",
+    views.add_review,
+    name="add_review",
+),
     # ==================================
     # PRODUCT MANAGEMENT
     # ==================================

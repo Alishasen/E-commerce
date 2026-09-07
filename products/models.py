@@ -233,3 +233,50 @@ class Payment(models.Model):
 
     def __str__(self):
         return f"Payment for Order #{self.order.id}"
+class Review(models.Model):
+
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name="reviews",
+    )
+
+    user = models.ForeignKey(
+        "auth.User",
+        on_delete=models.CASCADE,
+        related_name="product_reviews",
+    )
+
+    rating = models.PositiveIntegerField(
+        choices=[
+            (1, "1 Star"),
+            (2, "2 Stars"),
+            (3, "3 Stars"),
+            (4, "4 Stars"),
+            (5, "5 Stars"),
+        ]
+    )
+
+    comment = models.TextField(
+        blank=True
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True
+    )
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["product", "user"],
+                name="unique_product_review_per_user",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} - {self.product.name} ({self.rating}/5)"
