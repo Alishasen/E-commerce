@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Product, ProductImage, Banner,Category, Order, OrderItem
+from .models import Product, ProductImage, Banner,Category, Order, OrderItem, Payment
 
 
 class ProductImageInline(admin.TabularInline):
@@ -58,6 +58,8 @@ class OrderAdmin(admin.ModelAdmin):
     list_display = (
         "id",
         "user",
+        "full_name",
+        "phone",
         "total_amount",
         "status",
         "created_at",
@@ -70,6 +72,9 @@ class OrderAdmin(admin.ModelAdmin):
 
     search_fields = (
         "user__username",
+        "full_name",
+        "email",
+        "phone",
     )
 
 
@@ -82,4 +87,29 @@ class OrderItemAdmin(admin.ModelAdmin):
         "quantity",
         "price",
         "subtotal",
+    )
+
+
+@admin.register(Payment)
+class PaymentAdmin(admin.ModelAdmin):
+
+    list_display = (
+        "order",
+        "payment_method",
+        "amount",
+        "status",
+        "transaction_id",
+        "esewa_ref_id",
+        "created_at",
+    )
+
+    list_filter = (
+        "payment_method",
+        "status",
+    )
+
+    search_fields = (
+        "transaction_id",
+        "esewa_ref_id",
+        "order__id",
     )

@@ -1,11 +1,6 @@
 from django.urls import path
-
 from . import views
-
-
 app_name = "cart"
-
-
 urlpatterns = [
 
     path(
@@ -39,12 +34,6 @@ urlpatterns = [
     ),
 
     path(
-        "payment/<int:order_id>/",
-        views.payment,
-        name="payment",
-    ),
-
-    path(
         "payment/esewa/<int:order_id>/",
         views.esewa_payment,
         name="esewa_payment",
@@ -63,6 +52,11 @@ urlpatterns = [
     ),
 
     path(
+        "order/<int:order_id>/",
+        views.order_detail,
+        name="order_detail",
+    ),
+        path(
         "payment/success/<int:order_id>/",
         views.payment_success,
         name="payment_success",

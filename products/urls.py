@@ -34,6 +34,12 @@ urlpatterns = [
     # ==================================
 
     path(
+        "dashboard/",
+        views.admin_dashboard,
+        name="admin_dashboard",
+    ),
+
+    path(
         "manage/",
         views.product_list,
         name="product_list",

@@ -9,6 +9,8 @@ from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from products.models import Product, Order, OrderItem, Payment
 
+from .forms import CheckoutForm
+
 
 def cart_count(request):
     cart = request.session.get("cart", {})
@@ -215,38 +217,115 @@ def checkout(request):
 
     if request.method == "POST":
 
-        order = Order.objects.create(
-            user=request.user,
-            total_amount=total,
-            status="pending",
-        )
+        form = CheckoutForm(request.POST)
 
-        for item in cart_items:
+        if form.is_valid():
 
-            OrderItem.objects.create(
-                order=order,
-                product=item["product"],
-                quantity=item["quantity"],
-                price=item["product"].price,
-                subtotal=item["subtotal"],
+            data = form.cleaned_data
+
+            payment_method = data["payment_method"]
+
+            with transaction.atomic():
+
+                order = Order.objects.create(
+                    user=request.user,
+                    total_amount=total,
+                    full_name=data["full_name"],
+                    email=data["email"],
+                    phone=data["phone"],
+                    shipping_address=data["shipping_address"],
+                    shipping_city=data["shipping_city"],
+                    shipping_notes=data["shipping_notes"],
+                )
+
+                for item in cart_items:
+
+                    OrderItem.objects.create(
+                        order=order,
+                        product=item["product"],
+                        quantity=item["quantity"],
+                        price=item["product"].price,
+                        subtotal=item["subtotal"],
+                    )
+
+                # -------------------------
+                # CASH ON DELIVERY
+                # -------------------------
+                # No gateway to wait for, so the COD order is
+                # finalized right away: stock is reserved and
+                # the cart cleared. The payment itself stays
+                # "pending" until cash is collected on delivery.
+
+                if payment_method == "cod":
+
+                    Payment.objects.create(
+                        order=order,
+                        payment_method="cod",
+                        amount=total,
+                        status="pending",
+                        transaction_id=f"COD-{order.id}",
+                    )
+
+                    for item in cart_items:
+
+                        product = item["product"]
+
+                        # Re-check stock inside the transaction
+                        # in case it changed since the cart page
+                        # was loaded.
+                        if product.stock < item["quantity"]:
+                            transaction.set_rollback(True)
+                            return redirect("cart:cart_detail")
+
+                        product.stock -= item["quantity"]
+
+                        product.save(
+                            update_fields=["stock"]
+                        )
+
+                    request.session["cart"] = {}
+                    request.session.modified = True
+
+                    return redirect(
+                        "cart:payment_success",
+                        order_id=order.id,
+                    )
+
+                # -------------------------
+                # ESEWA
+                # -------------------------
+                # Stock, cart, and order status are only
+                # finalized after eSewa verifies the payment
+                # (see esewa_success). Go straight to eSewa —
+                # no intermediate KHOJ payment-choice page.
+
+                Payment.objects.create(
+                    order=order,
+                    payment_method="esewa",
+                    amount=total,
+                    status="pending",
+                )
+
+            return redirect(
+                "cart:esewa_payment",
+                order_id=order.id,
             )
-
-        # Create pending payment
-        Payment.objects.create(
-            order=order,
-            payment_method="esewa",
-            amount=total,
-            status="pending",
-        )
-
-        return redirect(
-            "cart:payment",
-            order_id=order.id,
-        )
 
     # -------------------------
     # GET = SHOW CHECKOUT
     # -------------------------
+
+    else:
+
+        form = CheckoutForm(
+            initial={
+                "full_name": (
+                    request.user.get_full_name()
+                    or request.user.username
+                ),
+                "email": request.user.email,
+            }
+        )
 
     return render(
         request,
@@ -254,24 +333,7 @@ def checkout(request):
         {
             "cart_items": cart_items,
             "total": total,
-        },
-    )
-
-
-@login_required(login_url="accounts:login")
-def payment(request, order_id):
-
-    order = get_object_or_404(
-        Order,
-        pk=order_id,
-        user=request.user,
-    )
-
-    return render(
-        request,
-        "cart/payment.html",
-        {
-            "order": order,
+            "form": form,
         },
     )
 
@@ -301,18 +363,24 @@ def generate_esewa_signature(
 
 @login_required(login_url="accounts:login")
 def esewa_payment(request, order_id):
+    
+    print("Initiating eSewa payment for order ID:", order_id)
+    print("request:", request)
 
     order = get_object_or_404(
         Order,
         pk=order_id,
         user=request.user,
     )
+    print("Initiating eSewa payment for order:", order.id)
 
     payment = get_object_or_404(
         Payment,
         order=order,
         payment_method="esewa",
     )
+    
+    print("Processing eSewa payment for order:", payment.order.id, "with payment ID:", payment.id)
 
     if payment.status == "success":
         return redirect(
@@ -369,6 +437,8 @@ def esewa_payment(request, order_id):
 def esewa_success(request):
 
     encoded_data = request.GET.get("data")
+    
+    print("Received eSewa response data:", encoded_data)
 
     if not encoded_data:
         return render(
@@ -383,8 +453,12 @@ def esewa_success(request):
         decoded_data = base64.b64decode(
             encoded_data
         ).decode("utf-8")
+        
+        print("Decoded eSewa response data:", decoded_data)
 
         response_data = json.loads(decoded_data)
+        
+    
 
     except (ValueError, json.JSONDecodeError):
         return render(
@@ -476,8 +550,13 @@ def esewa_success(request):
         with transaction.atomic():
 
             payment.status = "success"
+
+            payment.esewa_ref_id = verification_data.get(
+                "ref_id"
+            )
+
             payment.save(
-                update_fields=["status"]
+                update_fields=["status", "esewa_ref_id"]
             )
 
             order = payment.order
@@ -538,6 +617,8 @@ def esewa_success(request):
 
 @login_required(login_url="accounts:login")
 def esewa_failure(request):
+    
+    print("eSewa payment failed. Request:", request)
 
     transaction_uuid = request.GET.get(
         "transaction_uuid"
@@ -577,13 +658,42 @@ def payment_success(request, order_id):
         Order,
         pk=order_id,
         user=request.user,
-        status="paid",
     )
+
+    payment = getattr(order, "payment", None)
 
     return render(
         request,
         "cart/payment_success.html",
         {
             "order": order,
+            "payment": payment,
+        },
+    )
+
+
+@login_required(login_url="accounts:login")
+def order_detail(request, order_id):
+
+    # get_object_or_404 with user=request.user means a user can
+    # only ever open their own orders — anyone else's order_id
+    # just 404s instead of leaking data.
+    order = get_object_or_404(
+        Order,
+        pk=order_id,
+        user=request.user,
+    )
+
+    payment = getattr(order, "payment", None)
+
+    items = order.items.select_related("product")
+
+    return render(
+        request,
+        "cart/order_detail.html",
+        {
+            "order": order,
+            "payment": payment,
+            "items": items,
         },
     )

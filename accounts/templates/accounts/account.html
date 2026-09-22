@@ -1,0 +1,139 @@
+{% extends "products/storefront/base.html" %}
+
+{% block title %}
+My Account | KHOJ
+{% endblock %}
+
+{% block content %}
+
+<main class="container py-5">
+
+    <div class="row g-4">
+
+        <!-- =========================
+             ACCOUNT DETAILS
+        ========================== -->
+
+        <div class="col-lg-4">
+
+            <div class="card shadow-sm border-0">
+
+                <div class="card-body p-4">
+
+                    <h4 class="fw-bold mb-4">
+                        Account Details
+                    </h4>
+
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Username</p>
+                        <p class="fw-semibold">{{ user.username }}</p>
+                    </div>
+
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">Email</p>
+                        <p class="fw-semibold">{{ user.email|default:"—" }}</p>
+                    </div>
+
+                    <div class="mb-0">
+                        <p class="text-muted mb-1">Member Since</p>
+                        <p class="fw-semibold">{{ user.date_joined|date:"d M Y" }}</p>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =========================
+             ORDER HISTORY
+        ========================== -->
+
+        <div class="col-lg-8">
+
+            <div class="card shadow-sm border-0">
+
+                <div class="card-body p-4">
+
+                    <h4 class="fw-bold mb-4">
+                        Order History
+                    </h4>
+
+                    {% if orders %}
+
+                    <div class="table-responsive">
+
+                        <table class="table align-middle">
+
+                            <thead>
+                                <tr>
+                                    <th>Order</th>
+                                    <th>Date</th>
+                                    <th>Payment</th>
+                                    <th>Status</th>
+                                    <th>Total</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+
+                                {% for order in orders %}
+
+                                <tr>
+
+                                    <td>#{{ order.id }}</td>
+
+                                    <td>{{ order.created_at|date:"d M Y" }}</td>
+
+                                    <td>
+                                        {% if order.payment %}
+                                        {{ order.payment.get_payment_method_display }}
+                                        {% else %}
+                                        —
+                                        {% endif %}
+                                    </td>
+
+                                    <td>{{ order.get_status_display }}</td>
+
+                                    <td>Rs. {{ order.total_amount }}</td>
+
+                                    <td class="text-end">
+                                        <a
+                                            href="{% url 'cart:order_detail' order.id %}"
+                                            class="btn btn-sm btn-outline-dark"
+                                        >
+                                            View Details
+                                        </a>
+                                    </td>
+
+                                </tr>
+
+                                {% endfor %}
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                    {% else %}
+
+                    <p class="text-muted mb-0">
+                        You haven't placed any orders yet.
+                    </p>
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</main>
+
+{% endblock %}

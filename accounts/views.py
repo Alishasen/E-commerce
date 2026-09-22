@@ -1,6 +1,9 @@
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User, Group
 from django.shortcuts import redirect, render
+
+from products.models import Order
 
 from .forms import RegisterForm
 
@@ -53,7 +56,7 @@ def login_view(request):
             or request.user.groups.filter(name="Admin").exists()
         ):
             return redirect(
-                "products:product_list"
+                "products:admin_dashboard"
             )
 
         return redirect(
@@ -80,7 +83,7 @@ def login_view(request):
                 or user.groups.filter(name="Admin").exists()
             ):
                 return redirect(
-                    "products:product_list"
+                    "products:admin_dashboard"
                 )
 
             return redirect(
@@ -107,4 +110,25 @@ def logout_view(request):
 
     return redirect(
         "products:storefront_product_list"
+    )
+
+
+@login_required(login_url="accounts:login")
+def account_view(request):
+
+    # filter(user=request.user) means this can only ever show
+    # the logged-in user's own orders — nobody else's.
+    orders = (
+        Order.objects
+        .filter(user=request.user)
+        .select_related("payment")
+        .order_by("-created_at")
+    )
+
+    return render(
+        request,
+        "accounts/account.html",
+        {
+            "orders": orders,
+        },
     )

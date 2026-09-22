@@ -468,6 +468,13 @@ margin: 0 14px;
         Hi, {{ user.username }}
     </span>
 
+    <a
+        href="{% url 'accounts:account' %}"
+        class="text-decoration-none text-dark"
+    >
+        My Account
+    </a>
+
     {% if is_admin %}
 
         <a

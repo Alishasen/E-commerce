@@ -1,6 +1,4 @@
 from django.db import models
-
-
 class Category(models.Model):
 
     name = models.CharField(
@@ -140,6 +138,50 @@ class Order(models.Model):
         default="pending",
     )
 
+    # ------------------------------------------------------------
+    # Contact info, snapshotted at the time of the order so later
+    # changes to the user's profile never alter past orders.
+    # ------------------------------------------------------------
+
+    full_name = models.CharField(
+        max_length=150,
+        blank=True,
+        default="",
+    )
+
+    email = models.EmailField(
+        blank=True,
+        default="",
+    )
+
+    phone = models.CharField(
+        max_length=20,
+        blank=True,
+        default="",
+    )
+
+    # ------------------------------------------------------------
+    # Shipping address, also snapshotted per order.
+    # ------------------------------------------------------------
+
+    shipping_address = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+    )
+
+    shipping_city = models.CharField(
+        max_length=100,
+        blank=True,
+        default="",
+    )
+
+    shipping_notes = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+    )
+
     created_at = models.DateTimeField(
         auto_now_add=True,
     )
@@ -185,8 +227,9 @@ class OrderItem(models.Model):
 class Payment(models.Model):
 
     PAYMENT_METHOD_CHOICES = [
-        
+
         ("esewa", "eSewa"),
+        ("cod", "Cash on Delivery"),
     ]
 
     PAYMENT_STATUS_CHOICES = [
@@ -211,7 +254,19 @@ class Payment(models.Model):
         decimal_places=2,
     )
 
+    # KHOJ's own internal reference for this payment attempt
+    # (e.g. "KHOJ-<order id>-<timestamp>"). For eSewa this is sent
+    # out as transaction_uuid; for COD it can just identify the order.
     transaction_id = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+    )
+
+    # eSewa's own reference id (ref_id) returned once THEY confirm
+    # the payment. Kept separate from transaction_id above because
+    # that one is ours, not eSewa's.
+    esewa_ref_id = models.CharField(
         max_length=255,
         blank=True,
         null=True,

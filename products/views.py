@@ -1,10 +1,68 @@
 from django.shortcuts import redirect, render,get_object_or_404
 from .decorators import admin_required
 from .forms import ProductForm, ReviewForm
-from .models import Product, ProductImage, Banner, Category, Review
+from .models import Product, ProductImage, Banner, Category, Review, Order
 from wishlist.models import Wishlist
-from django.db.models import Avg, Count
+from django.db.models import Avg, Count, Sum
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
+
+# Products at or below this stock level show up in the
+# dashboard's "Low Stock Products" section.
+LOW_STOCK_THRESHOLD = 5
+
+
+@admin_required
+def admin_dashboard(request):
+
+    total_products = Product.objects.count()
+
+    total_orders = Order.objects.count()
+
+    total_customers = (
+        User.objects
+        .filter(groups__name="Customer")
+        .distinct()
+        .count()
+    )
+
+    # Revenue = orders that are actually paid/completed.
+    # Pending (unconfirmed COD), failed, and cancelled orders
+    # are excluded on purpose — they aren't real revenue yet.
+    total_revenue = (
+        Order.objects
+        .filter(status__in=["paid", "completed"])
+        .aggregate(total=Sum("total_amount"))
+        ["total"] or 0
+    )
+
+    recent_orders = (
+        Order.objects
+        .select_related("user", "payment")
+        .order_by("-created_at")[:5]
+    )
+
+    low_stock_products = (
+        Product.objects
+        .filter(stock__lte=LOW_STOCK_THRESHOLD)
+        .order_by("stock")[:5]
+    )
+
+    context = {
+        "total_products": total_products,
+        "total_orders": total_orders,
+        "total_customers": total_customers,
+        "total_revenue": total_revenue,
+        "recent_orders": recent_orders,
+        "low_stock_products": low_stock_products,
+    }
+
+    return render(
+        request,
+        "products/admin_dashboard.html",
+        context,
+    )
+
 
 @admin_required
 def product_list(request):

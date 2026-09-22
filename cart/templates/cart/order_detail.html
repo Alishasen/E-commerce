@@ -1,0 +1,253 @@
+{% extends "products/storefront/base.html" %}
+
+{% block title %}
+Order #{{ order.id }} | KHOJ
+{% endblock %}
+
+{% block content %}
+
+<main class="container py-5">
+
+    <!-- =========================
+         STATUS BANNER
+    ========================== -->
+
+    <div class="text-center mb-5">
+
+        <div class="mb-3">
+            <i class="bi bi-check-circle-fill fs-1"></i>
+        </div>
+
+        <h1 class="fw-bold mb-1">
+            {% if payment.payment_method == "cod" %}
+            Order Placed!
+            {% elif payment.status == "success" %}
+            Payment Successful!
+            {% elif payment.status == "failed" %}
+            Payment Failed
+            {% else %}
+            Payment Pending
+            {% endif %}
+        </h1>
+
+        <p class="text-muted mb-0">
+            {% if payment.payment_method == "cod" %}
+            Thank you for your order. Pay in cash when it arrives.
+            {% elif payment.status == "success" %}
+            Thank you for your order.
+            {% elif payment.status == "failed" %}
+            This payment could not be completed.
+            {% else %}
+            We're still waiting to confirm this payment.
+            {% endif %}
+        </p>
+
+    </div>
+
+
+    <div class="row g-4">
+
+        <!-- =========================
+             ORDER ITEMS
+        ========================== -->
+
+        <div class="col-lg-8">
+
+            <div class="card shadow-sm border-0 mb-4">
+
+                <div class="card-body p-4">
+
+                    <h2 class="fw-bold mb-4">
+                        Products
+                    </h2>
+
+                    {% for item in items %}
+
+                    <div class="d-flex align-items-center
+                                justify-content-between
+                                border-bottom py-3">
+
+                        <div>
+
+                            <h6 class="fw-semibold mb-1">
+                                {{ item.product.name }}
+                            </h6>
+
+                            <p class="text-muted mb-0">
+                                Rs. {{ item.price }}
+                                × {{ item.quantity }}
+                            </p>
+
+                        </div>
+
+                        <strong>
+                            Rs. {{ item.subtotal }}
+                        </strong>
+
+                    </div>
+
+                    {% endfor %}
+
+                    <div class="d-flex
+                                justify-content-between
+                                align-items-center
+                                pt-4">
+
+                        <span class="fw-semibold">
+                            Total
+                        </span>
+
+                        <strong class="fs-4">
+                            Rs. {{ order.total_amount }}
+                        </strong>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- =========================
+                 CONTACT + SHIPPING
+            ========================== -->
+
+            <div class="card shadow-sm border-0">
+
+                <div class="card-body p-4">
+
+                    <h2 class="fw-bold mb-4">
+                        Contact &amp; Shipping
+                    </h2>
+
+                    <div class="row">
+
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">Name</p>
+                            <p class="fw-semibold">{{ order.full_name|default:"—" }}</p>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">Email</p>
+                            <p class="fw-semibold">{{ order.email|default:"—" }}</p>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">Phone</p>
+                            <p class="fw-semibold">{{ order.phone|default:"—" }}</p>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">City</p>
+                            <p class="fw-semibold">{{ order.shipping_city|default:"—" }}</p>
+                        </div>
+
+                        <div class="col-12 mb-3">
+                            <p class="text-muted mb-1">Ship To</p>
+                            <p class="fw-semibold">{{ order.shipping_address|default:"—" }}</p>
+                        </div>
+
+                        {% if order.shipping_notes %}
+                        <div class="col-12">
+                            <p class="text-muted mb-1">Delivery Notes</p>
+                            <p class="fw-semibold">{{ order.shipping_notes }}</p>
+                        </div>
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =========================
+             ORDER + PAYMENT DETAILS
+        ========================== -->
+
+        <div class="col-lg-4">
+
+            <div class="card shadow-sm border-0">
+
+                <div class="card-body p-4">
+
+                    <h4 class="fw-bold mb-4">
+                        Order Details
+                    </h4>
+
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-muted">Order ID</span>
+                        <strong>#{{ order.id }}</strong>
+                    </div>
+
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-muted">Date</span>
+                        <strong>{{ order.created_at|date:"d M Y, h:i A" }}</strong>
+                    </div>
+
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-muted">Order Status</span>
+                        <strong>{{ order.get_status_display }}</strong>
+                    </div>
+
+                    <hr>
+
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-muted">Payment Method</span>
+                        <strong>
+                            {% if payment %}
+                            {{ payment.get_payment_method_display }}
+                            {% else %}
+                            —
+                            {% endif %}
+                        </strong>
+                    </div>
+
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-muted">Payment Status</span>
+                        <strong>
+                            {% if payment %}
+                            {{ payment.get_status_display }}
+                            {% else %}
+                            —
+                            {% endif %}
+                        </strong>
+                    </div>
+
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-muted">Transaction ID</span>
+                        <strong>{{ payment.transaction_id|default:"—" }}</strong>
+                    </div>
+
+                    {% if payment.esewa_ref_id %}
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-muted">eSewa Ref ID</span>
+                        <strong>{{ payment.esewa_ref_id }}</strong>
+                    </div>
+                    {% endif %}
+
+                    <div class="d-flex justify-content-between mb-4">
+                        <span class="text-muted">Amount</span>
+                        <strong class="fs-5">Rs. {{ order.total_amount }}</strong>
+                    </div>
+
+                    <a
+                        href="{% url 'products:storefront_product_list' %}"
+                        class="btn btn-dark w-100"
+                    >
+                        Continue Shopping
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</main>
+
+{% endblock %}
