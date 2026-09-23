@@ -1,4 +1,3 @@
-
 {% extends "products/storefront/base.html" %}
 
 
@@ -618,40 +617,48 @@
                          ACTION BUTTONS
                     ========================== -->
 
-                    <div class="row g-3">
+                    <form
+                        method="POST"
+                        action="{% url 'cart:cart_add' product.pk %}"
+                    >
+
+                        {% csrf_token %}
+
+                        <input
+                            id="cartQuantity"
+                            type="hidden"
+                            name="quantity"
+                            value="1"
+                        >
+
+                        <div class="row g-3">
 
 
-                        <!-- BUY NOW -->
+                            <!-- BUY NOW -->
+                            <!-- Same endpoint as Add to Cart — adding
+                                 "buy_now" tells the view to add this
+                                 item then send the user straight to
+                                 checkout with just this product
+                                 selected, instead of back to the
+                                 cart page. -->
 
-                        <div class="col-md-4">
+                            <div class="col-md-4">
 
-                            <button
-                                type="button"
-                                class="btn buy-btn btn-lg w-100"
-                            >
-                                Buy Now
-                            </button>
-
-                        </div>
-
-
-                        <!-- ADD TO CART -->
-
-                        <div class="col-md-4">
-
-                            <form
-                                method="POST"
-                                action="{% url 'cart:cart_add' product.pk %}"
-                            >
-
-                                {% csrf_token %}
-
-                                <input
-                                    id="cartQuantity"
-                                    type="hidden"
-                                    name="quantity"
+                                <button
+                                    type="submit"
+                                    name="buy_now"
                                     value="1"
+                                    class="btn buy-btn btn-lg w-100"
                                 >
+                                    Buy Now
+                                </button>
+
+                            </div>
+
+
+                            <!-- ADD TO CART -->
+
+                            <div class="col-md-4">
 
                                 <button
                                     type="submit"
@@ -660,11 +667,11 @@
                                     Add to Cart
                                 </button>
 
-                            </form>
+                            </div>
 
                         </div>
 
-                    </div>
+                    </form>
 
 
                 {% endif %}
@@ -979,15 +986,7 @@
 
             }
         );
-
     }
-
-
-
-    /* =========================
-       IMAGE SWITCHING
-    ========================== */
-
     function changeImage(image) {
 
         const mainImage =
@@ -997,12 +996,8 @@
         if (!mainImage) {
             return;
         }
-
-
         mainImage.src =
             image.src;
-
-
         document
             .querySelectorAll(".thumbnail")
             .forEach(function (thumbnail) {
@@ -1019,4 +1014,3 @@
 </script>
 
 {% endblock %}
-

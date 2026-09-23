@@ -42,6 +42,15 @@ class Product(models.Model):
         default=False
     )
 
+    # Products are never hard-deleted once they've been ordered
+    # (OrderItem.product is PROTECT, on purpose, so past orders keep
+    # their real product data intact). "Deleting" a product from the
+    # admin side instead deactivates it: it disappears from the
+    # storefront but stays intact for order history.
+    is_active = models.BooleanField(
+        default=True
+    )
+
     created_at = models.DateTimeField(
         auto_now_add=True
     )

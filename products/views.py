@@ -193,18 +193,41 @@ def product_image_delete(request, pk):
         pk=product_pk,
     )
     
-@admin_required    
+@admin_required
 def product_delete(request, pk):
+    # "Delete" deactivates instead of removing the row. Products
+    # that have ever been ordered are protected from real deletion
+    # (OrderItem.product is on_delete=PROTECT), so a hard delete
+    # would crash once a product has any order history. Deactivating
+    # hides it from the storefront while keeping past orders intact.
     product = get_object_or_404(
         Product,
         pk=pk,
     )
 
     if request.method == "POST":
-        product.delete()
+        product.is_active = False
+        product.save(
+            update_fields=["is_active"]
+        )
 
-        return redirect(
-            "products:product_list"
+    return redirect(
+        "products:product_detail",
+        pk=product.pk,
+    )
+
+
+@admin_required
+def product_activate(request, pk):
+    product = get_object_or_404(
+        Product,
+        pk=pk,
+    )
+
+    if request.method == "POST":
+        product.is_active = True
+        product.save(
+            update_fields=["is_active"]
         )
 
     return redirect(
@@ -219,6 +242,7 @@ def storefront_product_list(request):
 
     products = (
         Product.objects
+       .filter(is_active=True)
        .prefetch_related("images")
        .annotate(
            average_rating=Avg("reviews__rating"),
@@ -228,7 +252,7 @@ def storefront_product_list(request):
 
     trending_products = (
         Product.objects
-        .filter(is_trending=True)
+        .filter(is_trending=True, is_active=True)
         .prefetch_related("images")
         .annotate(
             average_rating=Avg("reviews__rating"),
@@ -298,7 +322,7 @@ def storefront_product_list(request):
 def storefront_product_detail(request, pk):
 
     product = get_object_or_404(
-        Product.objects.prefetch_related("images"),
+        Product.objects.filter(is_active=True).prefetch_related("images"),
         pk=pk,
     )
 

@@ -1,8 +1,6 @@
 {% extends "products/storefront/base.html" %}
 
 {% block title %}KHOJ | Shopping Cart{% endblock %}
-
-
 {% block extra_css %}
 
 <style>
@@ -202,6 +200,24 @@
     {% if cart_items %}
 
 
+    <!-- =========================
+         SELECTION FORM
+
+         Empty on purpose — the checkboxes and the "Proceed to
+         Checkout" button below live inside the item loop and the
+         summary card, and reference this form by id (via the
+         HTML "form" attribute) instead of being nested inside it,
+         since a <form> can't contain another <form>.
+    ========================= -->
+
+    <form
+        id="checkoutSelectForm"
+        method="GET"
+        action="{% url 'cart:checkout' %}"
+        onsubmit="return validateCheckoutSelection();"
+    ></form>
+
+
     <div class="row g-4">
 
 
@@ -221,6 +237,23 @@
                     <div class="cart-item">
 
                         <div class="row align-items-center g-3">
+
+
+                            <!-- SELECT FOR CHECKOUT -->
+
+                            <div class="col-auto">
+
+                                <input
+                                    type="checkbox"
+                                    class="form-check-input cart-select-checkbox"
+                                    name="selected_products"
+                                    value="{{ item.product.pk }}"
+                                    form="checkoutSelectForm"
+                                    checked
+                                    title="Select for checkout"
+                                >
+
+                            </div>
 
 
                             <!-- PRODUCT IMAGE -->
@@ -258,7 +291,7 @@
 
                             <!-- PRODUCT INFO -->
 
-                            <div class="col-8 col-md-4">
+                            <div class="col-8 col-md-3">
 
                                 <a
                                     href="{% url 'products:storefront_product_detail' item.product.pk %}"
@@ -431,14 +464,23 @@
                     </div>
 
 
-                    <!-- CHECKOUT WILL BE ADDED LATER -->
+                    <p class="small text-muted mb-2">
+                        <a
+                            href="#"
+                            id="selectAllToggle"
+                            class="text-decoration-none"
+                        >
+                            Select all / none
+                        </a>
+                    </p>
 
-                    <a
-                        href="{% url 'cart:checkout' %}"
+                    <button
+                        type="submit"
+                        form="checkoutSelectForm"
                         class="btn primary-btn w-100 btn-lg"
                     >
-                        Proceed to Checkout
-                    </a>
+                        Checkout Selected
+                    </button>
 
 
                 </div>
@@ -527,6 +569,57 @@ function increaseQuantity(button) {
     }
 
 }
+
+
+/* =========================
+   CHECKOUT SELECTION
+========================= */
+
+function validateCheckoutSelection() {
+
+    const checked = document.querySelectorAll(
+        '.cart-select-checkbox:checked'
+    );
+
+    if (checked.length === 0) {
+        alert("Please select at least one product to checkout.");
+        return false;
+    }
+
+    return true;
+
+}
+
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    const toggle = document.getElementById("selectAllToggle");
+
+    if (!toggle) {
+        return;
+    }
+
+    toggle.addEventListener("click", function (event) {
+
+        event.preventDefault();
+
+        const boxes = document.querySelectorAll(
+            ".cart-select-checkbox"
+        );
+
+        const allChecked = Array.from(boxes).every(
+            function (box) {
+                return box.checked;
+            }
+        );
+
+        boxes.forEach(function (box) {
+            box.checked = !allChecked;
+        });
+
+    });
+
+});
 
 </script>
 

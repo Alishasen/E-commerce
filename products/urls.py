@@ -75,4 +75,10 @@ urlpatterns = [
         name="product_delete",
     ),
 
+    path(
+        "manage/<int:pk>/activate/",
+        views.product_activate,
+        name="product_activate",
+    ),
+
 ]

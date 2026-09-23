@@ -7,6 +7,7 @@ from django.conf import settings
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
+from django.urls import reverse
 from products.models import Product, Order, OrderItem, Payment
 
 from .forms import CheckoutForm
@@ -107,6 +108,17 @@ def cart_add(request, product_id):
 
     request.session.modified = True
 
+    # "Buy Now" reuses this same add-to-cart endpoint (no duplicate
+    # logic) — it just adds the item as usual, then sends the user
+    # straight to checkout with only this product pre-selected,
+    # instead of back to the cart page.
+    if request.POST.get("buy_now"):
+
+        return redirect(
+            f"{reverse('cart:checkout')}"
+            f"?selected_products={product_id}"
+        )
+
     return redirect("cart:cart_detail")
 
 
@@ -188,10 +200,39 @@ def checkout(request):
     if not cart:
         return redirect("cart:cart_detail")
 
+    # -------------------------
+    # WHICH ITEMS ARE BEING CHECKED OUT
+    # -------------------------
+    # The cart page's checkboxes send the chosen product ids as
+    # "selected_products" — as query params on the first GET (from
+    # "Proceed to Checkout" or "Buy Now"), then carried through as
+    # hidden fields on the checkout form's POST. If none were sent
+    # at all (e.g. an old bookmark straight to /cart/checkout/),
+    # fall back to the whole cart, same as before this feature.
+
+    if request.method == "POST":
+        raw_selected = request.POST.getlist("selected_products")
+    else:
+        raw_selected = request.GET.getlist("selected_products")
+
+    if raw_selected:
+        selected_ids = [
+            product_id for product_id in raw_selected
+            if product_id in cart
+        ]
+    else:
+        selected_ids = list(cart.keys())
+
+    # Nothing valid was selected (e.g. a stale/tampered selection)
+    if not selected_ids:
+        return redirect("cart:cart_detail")
+
     cart_items = []
     total = 0
 
-    for product_id, quantity in cart.items():
+    for product_id in selected_ids:
+
+        quantity = cart[product_id]
 
         product = get_object_or_404(
             Product,
@@ -283,7 +324,13 @@ def checkout(request):
                             update_fields=["stock"]
                         )
 
-                    request.session["cart"] = {}
+                    # Remove only the items just ordered — any other
+                    # products left in the cart (not selected for
+                    # this checkout) stay there untouched.
+                    for product_id in selected_ids:
+                        cart.pop(product_id, None)
+
+                    request.session["cart"] = cart
                     request.session.modified = True
 
                     return redirect(
@@ -334,6 +381,7 @@ def checkout(request):
             "cart_items": cart_items,
             "total": total,
             "form": form,
+            "selected_ids": selected_ids,
         },
     )
 
@@ -604,9 +652,15 @@ def esewa_success(request):
                     update_fields=["status"]
                 )
 
-        # Clear cart only after successful payment
-        request.session["cart"] = {}
+        # Remove only the items that were part of this order — any
+        # other products the user had left in their cart (that
+        # weren't part of this checkout) stay there untouched.
+        cart = request.session.get("cart", {})
 
+        for item in order.items.all():
+            cart.pop(str(item.product_id), None)
+
+        request.session["cart"] = cart
         request.session.modified = True
 
         return redirect(
