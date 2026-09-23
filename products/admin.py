@@ -1,18 +1,28 @@
 from django.contrib import admin
 
-from .models import Product, ProductImage, Banner,Category, Order, OrderItem, Payment
+from .models import (
+    Product,
+    ProductImage,
+    Banner,
+    Category,
+    Order,
+    OrderItem,
+    Payment,
+    Review,
+)
 
 
 class ProductImageInline(admin.TabularInline):
     model = ProductImage
     extra = 1
 
+
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-
     list_display = ("name",)
     search_fields = ("name",)
-    
+
+
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     list_display = (
@@ -35,26 +45,21 @@ class ProductImageAdmin(admin.ModelAdmin):
         "image",
         "created_at",
     )
-    
+
+
 @admin.register(Banner)
 class BannerAdmin(admin.ModelAdmin):
-
     list_display = (
         "id",
         "order",
         "is_active",
     )
+    list_filter = ("is_active",)
+    ordering = ("order",)
 
-    list_filter = (
-        "is_active",
-    )
 
-    ordering = (
-        "order",
-    )
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-
     list_display = (
         "id",
         "user",
@@ -64,12 +69,10 @@ class OrderAdmin(admin.ModelAdmin):
         "status",
         "created_at",
     )
-
     list_filter = (
         "status",
         "created_at",
     )
-
     search_fields = (
         "user__username",
         "full_name",
@@ -80,7 +83,6 @@ class OrderAdmin(admin.ModelAdmin):
 
 @admin.register(OrderItem)
 class OrderItemAdmin(admin.ModelAdmin):
-
     list_display = (
         "order",
         "product",
@@ -92,7 +94,6 @@ class OrderItemAdmin(admin.ModelAdmin):
 
 @admin.register(Payment)
 class PaymentAdmin(admin.ModelAdmin):
-
     list_display = (
         "order",
         "payment_method",
@@ -102,14 +103,26 @@ class PaymentAdmin(admin.ModelAdmin):
         "esewa_ref_id",
         "created_at",
     )
-
     list_filter = (
         "payment_method",
         "status",
     )
-
     search_fields = (
         "transaction_id",
         "esewa_ref_id",
         "order__id",
+    )
+
+
+@admin.register(Review)
+class ReviewAdmin(admin.ModelAdmin):
+    list_display = (
+        "product",
+        "user",
+        "rating",
+    )
+    list_filter = ("rating",)
+    search_fields = (
+        "product__name",
+        "user__username",
     )
